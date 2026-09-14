@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+.DS_Store
+
+# External downloads (see DATA.md) — not redistributed in this repo
+external_data/
+
+# ml_pipeline run artifacts — not committed on purpose; run ml_pipeline.main
+# to generate your own copy locally (see outputs/README.md and DATA.md §6).
+# The folder structure itself (and its README/.gitkeep) IS tracked, so the
+# empty subfolders are visible in the repo — only the generated .png/.csv
+# files inside them are ignored.
+outputs/*/*.png
+outputs/*/*.csv

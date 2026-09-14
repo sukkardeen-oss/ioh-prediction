@@ -1,0 +1,8 @@
+column,n_total,n_non_null,pct_non_null,n_null,pct_null
+episode_start_sec,1284,1284,100.0,0,0.0
+episode_end_sec,1284,1284,100.0,0,0.0
+episode_duration_sec,1284,1284,100.0,0,0.0
+episode_beat_count,1284,1284,100.0,0,0.0
+episode_dominant_rhythm,1284,1283,99.92,1,0.08
+episode_beat_type,1284,1156,90.03,128,9.97
+episode_rr_cv,1284,811,63.16,473,36.84
