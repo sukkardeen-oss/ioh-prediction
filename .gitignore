@@ -4,6 +4,8 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+*.code-workspace
+.vscode/
 
 # External downloads (see DATA.md) — not redistributed in this repo
 external_data/

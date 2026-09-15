@@ -14,33 +14,33 @@ from . import config
 # Columns present in the IOH CSV that are identifiers, not model features.
 _ID_COLS = ["caseid", "episode_number"]
 
-# ── Columns excluded from the feature matrix ─────────────────────────────────
+# Columns excluded from the feature matrix
 # Organised by the clinical/methodological reason for exclusion.
 _LEAKAGE_COLS = [
 
-    # ── (original) Vasopressors / inotropes ──────────────────────────────────
+    # (original) Vasopressors / inotropes
     # Administered specifically to treat hypotension; including them would let
     # the model exploit reverse causality (treatment implies outcome).
     "intraop_phe", "intraop_eph", "intraop_epi", "intraop_ca",
 
-    # ── (original) Fluids and blood products ─────────────────────────────────
+    # (original) Fluids and blood products
     # Given in response to haemodynamic compromise; same reverse-causality risk.
     "intraop_rbc", "intraop_ffp", "intraop_colloid", "intraop_crystalloid",
 
-    # ── (original) Post-operative outcomes ───────────────────────────────────
+    # (original) Post-operative outcomes
     # Unavailable at the prediction time-point.
     "icu_days", "death_inhosp",
 
-    # ── (original) Raw timestamps ─────────────────────────────────────────────
+    # (original) Raw timestamps
     # Encode case ordering and wall-clock time, not physiology.
     "episode_start_sec", "episode_end_sec",
     "casestart", "caseend", "opstart", "opend", "anestart", "aneend",
     "adm", "dis",
 
-    # ── (original) Subject identifier ────────────────────────────────────────
+    # (original) Subject identifier
     "subjectid",
 
-    # ── Category 1: near-constant / temporal leakage / unit redundancy ────────
+    # Category 1: near-constant / temporal leakage / unit redundancy
     # nibp_outcome_imputed: True in <0.2 % of episodes — zero discriminative signal.
     "nibp_outcome_imputed",
     # airway: single observed value ("Oral") across the cohort — zero variance.
@@ -58,7 +58,7 @@ _LEAKAGE_COLS = [
     # collinear with the retained percentage-based measurement (lab_pt%).
     "lab_ptinr", "lab_ptsec",
 
-    # ── Category 3: clinically irrelevant procedure logistics ─────────────────
+    # Category 3: clinically irrelevant procedure logistics
     # Peripheral intravenous catheter site: not a haemodynamic predictor.
     "iv1",
     # Endotracheal tube size and its missingness flag: no IOH prediction rationale.
@@ -66,7 +66,7 @@ _LEAKAGE_COLS = [
     # Cormack–Lehane laryngoscopy grade: airway anatomy, not haemodynamic risk.
     "cormack",
 
-    # ── Category 4a: missingness indicator flags ──────────────────────────────
+    # Category 4a: missingness indicator flags
     # Encode data-collection patterns rather than physiology; risk introducing
     # systematic bias toward patients with incomplete intraoperative lab panels.
     "intraop_ebl_was_imputed", "intraop_uo_was_imputed",
@@ -74,7 +74,7 @@ _LEAKAGE_COLS = [
     "lab_lac_was_imputed", "lab_pco2_was_imputed", "lab_ph_was_imputed",
     "lab_po2_was_imputed", "lab_sao2_was_imputed",
 
-    # ── Category 4b: intraoperative lab duplicates of pre-operative analytes ──
+    # Category 4b: intraoperative lab duplicates of pre-operative analytes
     # For analytes measured at both time-points, the intraoperative value is
     # retained only where no pre-operative equivalent exists. Where a preop_*
     # counterpart is available, the lab_* value is dropped to eliminate

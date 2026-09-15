@@ -1,0 +1,305 @@
+{
+  "concept_map_id": "snuh-intraop-hypotension",
+  "version": "0.2.0-POC",
+  "status": "UNBOUND",
+  "_status_values": [
+    "UNBOUND  - omop_concept_id / placeholder codings outstanding; service FAILS READINESS",
+    "BOUND    - all required concepts bound and signed off by SNUH terminology team",
+    "RETIRED  - superseded by a newer concept_map version"
+  ],
+  "_notes": [
+    "TWO-LAYER BINDING.",
+    "",
+    "'features' holds measurement PRIMITIVES: things an instrument or a clinician",
+    "actually observed. These carry real LOINC / SNOMED CT codes and are rebindable",
+    "per institution.",
+    "",
+    "'derived' holds features COMPUTED from those primitives. These are deliberately",
+    "NOT bound to terminology. A computation over observations is not itself an",
+    "observation, and minting a local code for one produces a concept that looks bound",
+    "but that no other site can interpret. Worse, it hides the failure that matters:",
+    "two sites can hold the same nominal concept and compute it differently (trapezoid",
+    "vs sample mean, different resampling, different gap handling), the terminology",
+    "layer reports success, and the model silently receives a different quantity.",
+    "",
+    "So each derived entry declares its input primitives, its parameters, and a",
+    "version-bearing local identifier. The EXECUTABLE transform lives in",
+    "app/derivations.py and is hashed into the model artifact at export. Readiness",
+    "gate 5 refuses to serve if the two disagree. That is what makes the artifact",
+    "portable across institutions: rebinding the primitives cannot change what a",
+    "derived feature means.",
+    "",
+    "OMOP concept_id values are left null. Standard concept_ids are specific to an",
+    "OHDSI ATHENA vocabulary release; binding them from outside SNUH's own vocabulary",
+    "build would be a guess. SNUH's terminology team must populate them against the",
+    "release recorded in 'omop_vocabulary_version' and flip status to BOUND."
+  ],
+  "omop_vocabulary_version": null,
+  "omop_cdm_version": "5.4",
+  "fhir_version": "4.0.1",
+  "target": {
+    "name": "intraoperative_hypotension",
+    "description": "Probability of an intraoperative hypotensive event (MAP below 65 mmHg sustained for at least one minute) within the prediction horizon following an arrhythmia episode.",
+    "prediction_anchor": "episode_onset + observation_window",
+    "observation_window_s": 300,
+    "prediction_horizon_s": 600,
+    "_anchor_note": "Features are computed ONLY over [onset, onset + observation_window]. The outcome is evaluated over (anchor, anchor + horizon]. The derivation layer rejects any sample after the anchor rather than dropping it: at training time such a sample is outcome leakage, and at serving time its presence means the caller mis-timed the payload.",
+    "output_fhir_resource": "RiskAssessment"
+  },
+  "unit_policy": {
+    "on_unit_mismatch": "reject",
+    "_comment": "Convert upstream, never silently coerce."
+  },
+  "features": [
+    {
+      "feature": "map_series",
+      "dtype": "series",
+      "unit": "mm[Hg]",
+      "required": true,
+      "min_samples": 3,
+      "plausible_range": [
+        10,
+        220
+      ],
+      "display": "Mean blood pressure",
+      "loinc": "8478-0",
+      "omop": {
+        "domain": "Measurement",
+        "concept_id": null
+      },
+      "verify": true,
+      "verify_reason": "CRITICAL. LOINC 8478-0 does not distinguish invasive arterial-line MAP from oscillometric NIBP-derived MAP. These are different measurements at different sampling rates, and a model trained on beat-to-beat arterial data cannot be run on 3-minute cuff readings even though both bind correctly to this code. SNUH must pin the source device/method, not only the code."
+    },
+    {
+      "feature": "hr_series",
+      "dtype": "series",
+      "unit": "/min",
+      "required": true,
+      "min_samples": 3,
+      "plausible_range": [
+        10,
+        300
+      ],
+      "display": "Heart rate",
+      "loinc": "8867-4",
+      "omop": {
+        "domain": "Measurement",
+        "concept_id": null
+      },
+      "verify": false
+    },
+    {
+      "feature": "rhythm_code",
+      "dtype": "coded",
+      "required": true,
+      "display": "Cardiac rhythm finding",
+      "loinc": null,
+      "snomed": null,
+      "value_set": {
+        "sinus": {
+          "primary": null,
+          "includes": [],
+          "_expansion": null
+        },
+        "atrial_fibrillation": {
+          "primary": null,
+          "includes": [],
+          "_expansion": null
+        },
+        "atrial_flutter": {
+          "primary": null,
+          "includes": [],
+          "_expansion": null
+        },
+        "svt": {
+          "primary": null,
+          "includes": [],
+          "_expansion": null
+        },
+        "ventricular_ectopy": {
+          "primary": null,
+          "includes": [],
+          "_expansion": null
+        },
+        "bradyarrhythmia": {
+          "primary": null,
+          "includes": [],
+          "_expansion": null
+        },
+        "other": {
+          "primary": null,
+          "includes": [],
+          "_expansion": null
+        }
+      },
+      "omop": {
+        "domain": "Observation",
+        "concept_id": null
+      },
+      "verify": true,
+      "verify_reason": "Rhythm findings are SNOMED CT-coded, not LOINC. SNUH must supply both the observation concept and a concept for every value-set member. Any episode whose rhythm code falls outside the bound value set is rejected rather than mapped to 'other'.",
+      "unmapped_policy": "reject",
+      "_value_set_note": "SNOMED CT is a subsumption hierarchy and EHRs emit at varying specificity. Binding only a 'primary' concept means a payload carrying a more specific descendant (e.g. chronic or permanent atrial fibrillation under a generic atrial fibrillation binding) is rejected even though it clearly belongs in that bucket. Because the SDDC is air-gapped, no terminology server can be called at request time to test subsumption, so the descendant closure must be PRE-EXPANDED into 'includes' when SNUH binds this map. Record the vocabulary release and expansion date in '_expansion': a closure is only valid for the release it came from, and a later release adding concepts silently shrinks coverage.",
+      "_unmapped_policy_note": "'reject' (default): a code outside the bound value set returns 422. Rationale: 'other' in training meant 'residual rhythms actually observed', not 'codes we failed to map'. If a binding breaks and everything lands in 'other', the model runs on garbage and nothing errors. 'map_to_other': unmapped codes fall into the 'other' member. Rationale: in a live theatre a 422 means no risk score at all for that episode. Whichever is chosen, the unmapped RATE is counted and exposed on /readyz - a rising rate is how a vocabulary update that broke the binding becomes visible."
+    },
+    {
+      "feature": "episode_period",
+      "dtype": "period",
+      "required": true,
+      "fhir": {
+        "source": "Observation.effectivePeriod"
+      },
+      "omop": {
+        "domain": "Measurement",
+        "concept_id": null,
+        "field": "measurement_datetime"
+      },
+      "verify": false
+    },
+    {
+      "feature": "age",
+      "dtype": "float",
+      "unit": "a",
+      "required": true,
+      "plausible_range": [
+        0,
+        120
+      ],
+      "fhir": {
+        "source": "Patient.birthDate",
+        "derivation": "age_years_at_episode_onset"
+      },
+      "loinc": "30525-0",
+      "omop": {
+        "domain": "Person",
+        "concept_id": null,
+        "field": "year_of_birth"
+      },
+      "verify": false
+    },
+    {
+      "feature": "sex",
+      "dtype": "category",
+      "categories": [
+        "M",
+        "F"
+      ],
+      "required": true,
+      "fhir": {
+        "source": "Patient.gender",
+        "value_map": {
+          "male": "M",
+          "female": "F"
+        }
+      },
+      "loinc": "46098-0",
+      "omop": {
+        "domain": "Person",
+        "concept_id": null,
+        "field": "gender_concept_id",
+        "value_concept_ids": {
+          "M": 8507,
+          "F": 8532
+        }
+      },
+      "verify": true,
+      "verify_reason": "8507/8532 are long-stable OMOP gender concepts but must still be confirmed against the local vocabulary release."
+    }
+  ],
+  "derived": [
+    {
+      "feature": "episode_duration_min",
+      "identifier": "urn:snuh:derived:episode-duration-min:v1.0.0",
+      "version": "1.0.0",
+      "inputs": [
+        "episode_period"
+      ],
+      "unit": "min"
+    },
+    {
+      "feature": "map_mean",
+      "identifier": "urn:snuh:derived:map-mean:v1.0.0",
+      "version": "1.0.0",
+      "inputs": [
+        "map_series"
+      ],
+      "unit": "mm[Hg]"
+    },
+    {
+      "feature": "map_min",
+      "identifier": "urn:snuh:derived:map-min:v1.0.0",
+      "version": "1.0.0",
+      "inputs": [
+        "map_series"
+      ],
+      "unit": "mm[Hg]"
+    },
+    {
+      "feature": "map_slope",
+      "identifier": "urn:snuh:derived:map-slope:v1.0.0",
+      "version": "1.0.0",
+      "inputs": [
+        "map_series"
+      ],
+      "unit": "mm[Hg]/min"
+    },
+    {
+      "feature": "map_auc_below_65",
+      "identifier": "urn:snuh:derived:map-auc-below-65:v1.0.0",
+      "version": "1.0.0",
+      "inputs": [
+        "map_series"
+      ],
+      "unit": "mm[Hg].min"
+    },
+    {
+      "feature": "map_frac_below_65",
+      "identifier": "urn:snuh:derived:map-frac-below-65:v1.0.0",
+      "version": "1.0.0",
+      "inputs": [
+        "map_series"
+      ],
+      "unit": "1"
+    },
+    {
+      "feature": "map_sd",
+      "identifier": "urn:snuh:derived:map-sd:v1.0.0",
+      "version": "1.0.0",
+      "inputs": [
+        "map_series"
+      ],
+      "unit": "mm[Hg]"
+    },
+    {
+      "feature": "hr_mean",
+      "identifier": "urn:snuh:derived:hr-mean:v1.0.0",
+      "version": "1.0.0",
+      "inputs": [
+        "hr_series"
+      ],
+      "unit": "/min"
+    },
+    {
+      "feature": "hr_sd",
+      "identifier": "urn:snuh:derived:hr-sd:v1.0.0",
+      "version": "1.0.0",
+      "inputs": [
+        "hr_series"
+      ],
+      "unit": "/min"
+    }
+  ],
+  "derived_writeback": {
+    "_comment": "If derived values are persisted back to the record for audit or reuse, this is how. FHIR: Observation.derivedFrom pointing at the source Observations, Observation.code from the local CodeSystem below, Observation.method naming the transform version. OMOP: write to MEASUREMENT with measurement_concept_id = 0 (the honest encoding for 'no standard concept exists', rather than a forced mis-mapping), the local URI in measurement_source_value, and a derived-value type concept in measurement_type_concept_id.",
+    "fhir_code_system": "urn:snuh:codesystem:derived-features",
+    "omop_measurement_concept_id": 0,
+    "omop_measurement_type_concept_id": null
+  },
+  "excluded_features": {
+    "_comment": "Documented so exclusions stay reviewable decisions rather than oversights.",
+    "post_anchor_samples": "Any MAP or HR sample timestamped after the prediction anchor. Rejected, not truncated: at training time these are outcome leakage; at serving time their presence means the payload was assembled with the wrong window.",
+    "vasopressor_administration": "Drug administration during the observation window is both a treatment response to falling MAP and a strong predictor of it. Including it without an explicit causal framing produces a model that learns 'the anaesthetist is worried', which is not the same as predicting hypotension and does not transfer to a site with different practice patterns.",
+    "free_text": "Operation and diagnosis strings are re-identifying and are not part of the payload contract.",
+    "identifiers": "caseid / subjectid style research identifiers are never accepted from or returned to the EHR."
+  }
+}

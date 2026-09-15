@@ -48,7 +48,7 @@ def _dataset_name(csv_path: str) -> str:
     return stem.replace("_", " ").title()
 
 
-# ── Figure helpers ────────────────────────────────────────────────────────────
+# Figure helpers
 
 def _save_combined_roc(fitted: dict, X_test, y_test, dataset_name: str,
                        output_dir: str) -> str:
@@ -200,7 +200,7 @@ def _save_results_table(results: pd.DataFrame, dataset_name: str,
     return path
 
 
-# ── Main pipeline ─────────────────────────────────────────────────────────────
+# Main pipeline
 
 def main():
     parser = argparse.ArgumentParser(description="IOH prediction pipeline")
@@ -222,7 +222,7 @@ def main():
         for stale in glob.glob(os.path.join(args.output_dir, pattern)):
             os.remove(stale)
 
-    # ── STEP 1: Load data ─────────────────────────────────────────────────────
+    # STEP 1: Load data
     print("=" * 70)
     print("STEP 1/4 — Loading data")
     print("=" * 70)
@@ -235,7 +235,7 @@ def main():
     print(f"Train: {X_train.shape[0]} episodes | Test: {X_test.shape[0]} episodes")
     print("(Split is patient-level — all episodes from the same caseid stay together)")
 
-    # ── STEP 2: Train & tune all models ──────────────────────────────────────
+    # STEP 2: Train & tune all models
     print("\n" + "=" * 70)
     print("STEP 2/4 — Training & tuning models")
     print("  Models: Logistic Regression, Ridge Regression, Random Forest, XGBoost")
@@ -252,7 +252,7 @@ def main():
     ] if c in results.columns]
     print(results[display_cols].to_string(index=False))
 
-    # ── STEP 3: Combined ROC + AUROC boxplot (all models, every run) ──────────
+    # STEP 3: Combined ROC + AUROC boxplot (all models, every run)
     print("\n" + "=" * 70)
     print("STEP 3/4 — Saving combined ROC curve and AUROC boxplot")
     print("=" * 70)
@@ -272,7 +272,7 @@ def main():
     else:
         print("  [warn] No bootstrap AUROCs computed — boxplot skipped.")
 
-    # ── STEP 4: Best model → confusion matrix + results table + SHAP ─────────
+    # STEP 4: Best model → confusion matrix + results table + SHAP
     print("\n" + "=" * 70)
     print("STEP 4/4 — Best model: confusion matrix, results table, SHAP")
     print("=" * 70)
