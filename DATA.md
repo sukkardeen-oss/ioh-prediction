@@ -15,7 +15,7 @@ file is needed for this — just internet access. VitalDB is an open research
 dataset; no credentialing was required for the tracks and case/lab data used
 here at the time this pipeline was built.
 
-### PhysioNet — VitalDB Arrhythmia Database (manual download required)
+### PhysioNet - VitalDB Arrhythmia Database (manual download required)
 Several notebooks read per-patient beat/rhythm annotation files
 (`Annotation_file_<caseid>.csv`) from the **VitalDB Arrhythmia Database**
 ("An anesthesiologist-validated, large-scale intraoperative arrhythmia
@@ -27,7 +27,7 @@ dataset with beat and rhythm labels", PhysioNet, v1.0.0).
 external_data/vitaldb-arrhythmia-database-1.0.0/Annotation_Files/Annotation_file_<caseid>.csv
 ```
 
-`external_data/` is gitignored — it is never committed to this repo. One
+`external_data/` is gitignored - it is never committed to this repo. One
 notebook (`02_verify_and_add_rhythm_labels.ipynb`) also downloads
 `metadata.csv` directly from PhysioNet over HTTPS (no manual step needed for
 that file specifically).
