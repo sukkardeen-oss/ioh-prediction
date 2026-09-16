@@ -6,7 +6,7 @@ The short version of the pipeline: pull 482 patients from VitalDB who have arrhy
 
 ## What's actually in here
 
-`notebooks/` has the full data pipeline, numbered 01 through 12 so you can run them in order without guessing what depends on what. There's also an `eda/` folder inside it for the exploratory stuff, things like the correlation heatmap, the missingness table, and a waveform viewer I leaned on constantly while debugging rhythm labels.
+`notebooks/` has the full data pipeline, numbered 01 through 12 so you can run them in order without guessing what depends on what. There's also an `eda/` folder inside it for the exploratory data; things like the correlation heatmap, the missingness table, and a waveform viewer I leaned on constantly while debugging rhythm labels.
 
 `ml_pipeline/` is the actual training code. Four models: logistic regression, ridge, random forest, and XGBoost. It handles the patient level train and test split so episodes from the same patient never end up on both sides, bootstraps AUROC confidence intervals, and produces SHAP plots for whichever model wins that run.
 
